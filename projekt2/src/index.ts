@@ -7,7 +7,7 @@ const app = express()
 app.use(express.json())
 
 app.get('/', function (req: Request, res: Response) {
-  res.send('GET Hello World222')
+  res.send('GET Hello World')
 })
 app.post('/', function (req: Request, res: Response) {
   console.log(req.body) // e.x. req.body.title 
@@ -17,42 +17,44 @@ interface Note {
   title: string;
   content: string;
   createDate?: string;
-  tags?: string[];
+  tags?: any[];
   id?: number;
 }
+
 let notatka: Note[] = [
   {
-    title: "title",
-    content: "content",
-    createDate: "21-03-2022",
-    tags: ["tag1", "tag2", "tag3"],
-    id: 1,
-  },
-  {
-    title: "title2",
-    content: "content2",
-    createDate: "22-03-2022",
-    tags: ["tag4", "tag5", "tag6"],
+    title: "b",
+    content: "b",
+    createDate: "17-02-2022",
+    tags: ["d", "e", "f"],
     id: 2,
   },
+  {
+    title: "a",
+    content: "a",
+    createDate: "16-02-2022",
+    tags: ["a", "b", "c"],
+    id: 1,
+  },
 ];
+
 app.get("/note/:id", function (req: Request, res: Response) {
-
-  const title = req.body.title;
-  const content = req.body.content;
-
   var ID = req.params.id;
   const IDnumber = +ID;
 
-  for (const item of notatka) {
+  for (var item of notatka) {
     if (item.id == IDnumber && ID != null) {
       res.status(200).send(item);
     } else {
       res.status(404).send("Błąd 404")
     }
   }
-
 });
+
+app.get("/notes", function (req: Request, res: Response) {
+  res.send(notatka);
+});
+
 app.post("/note", function (req: Request, res: Response) {
   const title = req.body.title;
   const content = req.body.content;
@@ -67,7 +69,6 @@ app.post("/note", function (req: Request, res: Response) {
     notatka.push(note);
     res.status(200).send(note.id);
   }
-
 });
 
 
@@ -87,7 +88,7 @@ app.put("/note/:id", (req, res) => {
 
   const note = notatka.find((note) => note.id === ID);
   if (note == null) {
-    res.status(404).send("nie odnaleziono notatki")
+    res.status(404).send("błąd 404")
   }else{
     function validateToken(note: any) {
       return note;
