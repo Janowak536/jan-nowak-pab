@@ -43,10 +43,30 @@ interface Tag {
   name: string;
 }
 
+interface UserSchema{
+  login: string;
+  password: string;
+}
+
+let uzytkownik: {
+  login:'uzytkownik',
+  password:'token'
+};
+
+
 let tags: Tag[] = [];
 let notatka: Note[] = [];
 
+app.post("/login", function(req,res) {
+  const authData = req.headers.authorization;
+  const token = authData?.split(' ')[1] ?? '';
+  
+  const payload = jwt.verify(token,secret);
+})
 
+//const authData = req.headers.authorization;
+//const token = authData?.split(' ')[1] ?? '';
+//const payload = jwt.verify(token,secret);
 app.get("/tags", function (req, res) {
   res.send(tags);
 });
