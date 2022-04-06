@@ -9,8 +9,7 @@ function Read(): void {
   var fs = require("fs");
   var data = fs.readFileSync('./data/notatka.json');
   var words = JSON.parse(data);
-  console.log(words);
-  
+  console.log(words); 
 }
 
 function Write(): void {
@@ -43,30 +42,9 @@ interface Tag {
   name: string;
 }
 
-interface UserSchema{
-  login: string;
-  password: string;
-}
-
-let uzytkownik: {
-  login:'uzytkownik',
-  password:'token'
-};
-
-
 let tags: Tag[] = [];
 let notatka: Note[] = [];
 
-app.post("/login", function(req,res) {
-  const authData = req.headers.authorization;
-  const token = authData?.split(' ')[1] ?? '';
-  
-  const payload = jwt.verify(token,secret);
-})
-
-//const authData = req.headers.authorization;
-//const token = authData?.split(' ')[1] ?? '';
-//const payload = jwt.verify(token,secret);
 app.get("/tags", function (req, res) {
   res.send(tags);
 });
@@ -133,8 +111,10 @@ app.get("/note/:id", function (req: Request, res: Response) {
 });
 
 app.get("/notes", function (req: Request, res: Response) {
-  Read();
-  res.send(notatka);
+  var fs = require("fs");
+  var data = fs.readFileSync('./data/notatka.json');
+  var words = JSON.parse(data);
+  res.send(words);
   
 });
 
