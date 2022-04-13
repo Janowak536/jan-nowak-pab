@@ -8,6 +8,7 @@ import { title } from "process";
 require("dotenv").config();
 const jwt = require("jsonwebtoken");
 
+
 const app = express();
 
 app.use(express.json())
@@ -72,6 +73,7 @@ app.post("/login", async function (req, res) {
     res.send({token:token});
   
 });
+
 app.get("/tags", function (req, res) {
   Read();
   res.send(tags);
@@ -162,9 +164,11 @@ app.get("/note/:id", async function (req: Request, res: Response) {
   }
 });
 
+
 app.get("/notes", async function (req, res) {
   await Read();
   res.send(notatka);
+
 });
 
 app.post("/note", async function (req: Request, res: Response) {
