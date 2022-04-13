@@ -87,7 +87,7 @@ app.post("/tag", async function (req, res) {
     const tagFind = tags.find((name) => name.name === a);
 
     if (tagFind) {
-      res.status(404).send("Błąd 404 notatka nie istnieje");
+      res.status(404).send("Błąd 404 tag nie istnieje");
     } else {
       let tag: Tag = {
         name: req.body.name,
@@ -99,7 +99,7 @@ app.post("/tag", async function (req, res) {
       await Write();
     }
   } else {
-    res.status(404).send("Błąd 404 notatka nie została utworzona");
+    res.status(404).send("Błąd 404 tag nie została utworzona");
   }
 });
 app.post("/tag", function (req, res) {
