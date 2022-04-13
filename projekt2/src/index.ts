@@ -1,24 +1,14 @@
 
-import express from "express";
 import { notStrictEqual } from "assert";
-import { Request, Response } from "express";
+import express from "express";
+import e, { Request, Response } from "express";
 import { write } from "fs";
 import { title } from "process";
 
-function Read(): void {
-  var fs = require("fs");
-  var data = fs.readFileSync('./data/notatka.json');
-  var words = JSON.parse(data);
-  console.log(words);
-  
-}
+require("dotenv").config();
+const jwt = require("jsonwebtoken");
 
-function Write(): void {
-  var fs = require("fs");
-  fs.writeFileSync('./data/notatka.json', JSON.stringify(notatka));
-}
-
-const app = express()
+const app = express();
 
 app.use(express.json())
 
@@ -30,27 +20,86 @@ app.post('/', function (req: Request, res: Response) {
   res.status(200).send('POST Hello World')
 })
 
-
 interface Note {
   title: string;
   content: string;
   createDate?: string;
-  tags?: any[];
+  tags?: Tag[];
   id?: number;
 }
+
+interface Login {
+  login: string;
+  password: string;
+
+  id?: number;
+}
+
 interface Tag {
   id?: number;
   name: string;
 }
 
+
 let tags: Tag[] = [];
 let notatka: Note[] = [];
 
+let users: Login[] = [
+  {
+    login: "admin1",
+    password: "admin1"
+  },
+  {
+    login: "admin2",
+    password:"admin2"
+  }
+ 
+];
+app.get("/users",auth,function (req, res) {
+  
+  res.send(users.filter(x => x.login === req.body.login));
+});
+app.post("/login", async function (req, res) {
+  const login = req.body.login;
+  const password = req.body.password;
 
+  let user:Login = {
+    login:login,
+    password:password
+  }
+
+    const token = jwt.sign(user,process.env.JWT_KEY)
+    res.send({token:token});
+  
+});
 app.get("/tags", function (req, res) {
+  Read();
   res.send(tags);
 });
+app.post("/tag", async function (req, res) {
+  await Read();
+  if (req.body.name) {
+    const name = req.body.name.toLowerCase();
+    var a = name.toLowerCase();
 
+    const tagFind = tags.find((name) => name.name === a);
+
+    if (tagFind) {
+      res.status(404).send("Błąd 404 notatka nie istnieje");
+    } else {
+      let tag: Tag = {
+        name: req.body.name,
+        id: Date.now(),
+      };
+
+      tags.push(tag);
+      res.status(200).send(tag);
+      await Write();
+    }
+  } else {
+    res.status(404).send("Błąd 404 notatka nie została utworzona");
+  }
+});
 app.post("/tag", function (req, res) {
   if (req.body.name) {
     const name = req.body.name.toLowerCase();
@@ -73,14 +122,17 @@ app.post("/tag", function (req, res) {
   }
 });
 
-app.delete("/tag/:id", function (req, res) {
+app.delete("/tag/:id", async function (req, res) {
+  await Read();
   const { id } = req.params;
   const ID = +id;
   tags = tags.filter((tag) => tag.id !== ID);
-  res.send("tag usunięty");
+  await Write();
+  res.send("Tag został usunięty");
 });
 
-app.put("/tag/:id", function (req, res) {
+app.put("/tag/:id", async function (req, res) {
+  await Read();
   const { id } = req.params;
   const ID = +id;
   const name = req.body.name;
@@ -93,35 +145,31 @@ app.put("/tag/:id", function (req, res) {
     tag!.name = name;
   }
   res.send(tag);
+  await Write();
 });
 
 
-app.get("/note/:id", function (req: Request, res: Response) {
-  const title = req.body.title;
-  const content = req.body.content;
+app.get("/note/:id", async function (req: Request, res: Response) {
+  await Read();
+  const note = notatka.find((note) => note.id ===parseInt(req.params.id))
 
   var ID = req.params.id;
   const IDnumber = +ID;
-
-  for (const item of notatka) {
-    if (item.id == IDnumber && ID != null) {
-      res.status(200).send(item);
-    } else {
-      res.status(404).send("Błąd 404");
-    }
+  if(note){
+    res.status(200).send(note);
+  }else{
+    res.status(404).send("Błąd 404");
   }
 });
 
-app.get("/notes", function (req: Request, res: Response) {
-  Read();
+app.get("/notes", async function (req, res) {
+  await Read();
   res.send(notatka);
-  
 });
 
-app.post("/note", function (req: Request, res: Response) {
-  Read();
+app.post("/note", async function (req: Request, res: Response) {
+  await Read();
   if (req.body.title && req.body.content) {
-
     let note: Note = {
       title: req.body.title,
       content: req.body.content,
@@ -132,53 +180,53 @@ app.post("/note", function (req: Request, res: Response) {
 
     let tag: Tag = {
       id: Date.now(),
-      name: req.body.tags
+      name: req.body.tags,
     };
 
     var idToString = note.id!.toString();
 
-    if(tag.name===undefined){
+    if (tag.name === undefined) {
       tag = {
-        id :Date.now(),
-        name: "Default"
-      }
+        id: Date.now(),
+        name: "Default",
+      };
     }
 
     const name = tag.name.toString().toLowerCase();
-
     let tagNameToLowerCase = name.toLowerCase();
 
     const tagFind = tags.find((x) => x.name === tagNameToLowerCase);
 
-    if (tagFind||tagNameToLowerCase==="default") {
+    if (tagFind || tagNameToLowerCase === "default") {
       notatka.push(note);
-      Write();
+      await Write();
+    } else {
+      tags.push(tag);
+      notatka.push(note);
+
+      await Write();
     }
-    else {
-      tags.push(tag)
-      notatka.push(note);    
-      Write();
-    }
+
     res.status(200).send(idToString);
-  }
-  else {
+  } else {
     res.status(404).send("Błąd 404");
   }
 });
 
 
 
-app.delete("/note/:id", (req, res) => {
-  Read();
+app.delete("/note/:id", async (req, res) => {
+  await Read();
   const { id } = req.params;
   const ID = +id;
 
   notatka = notatka.filter((note) => note.id !== ID);
-  Write();
-  res.send("Delete");
+  await Write();
+  res.send("poszedł w piach");
 });
-app.put("/note/:id", (req, res) => {
-  Read();
+
+app.put("/note/:id",async (req, res) => {
+  await Read();
   const { id } = req.params;
   const ID = +id;
 
@@ -186,32 +234,62 @@ app.put("/note/:id", (req, res) => {
 
   const note = notatka.find((note) => note.id === ID);
   if (note == null) {
-    res.status(404).send("błąd 404")
-  }else{
+    res.status(404).send("Błąd 404");
+  } else {
     function validateToken(note: any) {
       return note;
     }
-  
     validateToken(note as any);
-  
     if (title) {
       note!.title = title;
     }
-  
     if (content) {
       note!.content = content;
     }
-  
     if (createDate) {
       note!.createDate = createDate;
     }
-  
     if (tags) {
       note!.tags = tags;
     }
-  
     res.send(note);
-    Write()
+    await Write();
   }
 });
+
+function auth(req:any,res:any,next:any) {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1]
+
+  if (token==null) 
+  {
+    return res.sendStatus(401);
+  }
+
+  jwt.verify(token,process.env.JWT_KEY, (err:any,user:any) =>{
+    if(err)
+    {
+      return res.sendStatus(403)
+    }
+    req.user = user;
+    next();
+  })
+}
+async function Write(): Promise<void> {
+  var fs = require("fs");
+
+ await  fs.writeFileSync("./data/notatka.json", JSON.stringify(notatka));
+  await fs.writeFileSync("./data/tag.json", JSON.stringify(tags));
+}
+
+async function Read(): Promise<void> {
+  var fs = require("fs");
+
+  var dataNotatka = await fs.readFileSync("./data/notatka.json");
+  var dataTag = await fs.readFileSync("./data/tag.json");
+
+  notatka = JSON.parse(dataNotatka);
+  tags = JSON.parse(dataTag)
+
+}
 app.listen(3000)
